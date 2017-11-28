@@ -12,7 +12,7 @@ const float RESTART_IVAL = 3.;
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     vec2 uv = fragCoord.xy / iResolution.xy;
-	vec2 p = uv;
+    vec2 p = uv;
 
     float t = mod(iTime, RESTART_IVAL);
     // flip textures every second melt
@@ -39,7 +39,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     if(p.y > 1.)
     {
         if(texFlip)
-        	fragColor = texture(iChannel1, uv);
+            fragColor = texture(iChannel1, uv);
         else
             fragColor = texture(iChannel0, uv);
     }
