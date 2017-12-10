@@ -11,7 +11,7 @@
 #define RING_RADIUS 1.5
 
 // raymarching constants
-#define MIN_DIST  0.001
+#define MIN_DIST  .001
 #define MAX_DIST  30.
 #define NUM_STEPS 100
 #define BACKGROUND_ID 0
@@ -28,7 +28,6 @@ vec3 EYE = vec3(7.5, 0., 0.);
 // helper struct to collect raymarching data
 struct RMInfo
 {
-    vec3 color;
     vec3 pos;
     vec3 normal;
     int  objId;
@@ -102,7 +101,7 @@ vec3 EyeRay(vec2 fragCoord, vec3 eyeDir)
 
     vec3 forward = normalize(eyeDir);
     vec3 right   = normalize(cross(vec3(.0, 1., .0), forward));
-    vec3 up      = normalize(cross(forward, right));    
+    vec3 up      = normalize(cross(forward, right));
 
     return normalize(uv.x * right + uv.y * up + forward * FOV);
 }
@@ -122,7 +121,7 @@ float Ring(vec3 pos)
 //  flickering hellish background
 // -------------------------------
 vec3 Background(vec3 ray)
-{ 
+{
     return texture(iChannel2, ray).rgb * vec3(.7, .15, .0) * (1. + texture(iChannel1, vec2(0., 0.)).r);
 }
 
@@ -131,7 +130,7 @@ vec3 Background(vec3 ray)
 // ----------------
 vec3 SurfaceNormal(in vec3 pos)
 {
-    vec3 eps = vec3( 0.001, 0.0, 0.0 );
+    vec3 eps = vec3( MIN_DIST, 0., 0. );
     return normalize(-vec3(Ring(pos + eps.xyy) - Ring(pos - eps.xyy),
                            Ring(pos + eps.yxy) - Ring(pos - eps.yxy),
                            Ring(pos + eps.yyx) - Ring(pos - eps.yyx)));
@@ -144,11 +143,10 @@ RMInfo Raymarch(vec3 from, vec3 to)
 {
     float t = 0.;
     int objId = BACKGROUND_ID;
-    vec3 color = vec3(0.);
     vec3 pos;
     vec3 normal;
     float dist;
-    
+
     for (int i = 0; i < NUM_STEPS; ++i)
     {
         pos = from + to * t;
@@ -160,18 +158,17 @@ RMInfo Raymarch(vec3 from, vec3 to)
         t += dist * 0.43;
         objId = RING_ID;
     }
- 
+    
     if (t < MAX_DIST)
     {
         normal = SurfaceNormal(pos);
-        color = objId == RING_ID ? Gold(pos) : Background(to);
     }
     else
     {
         objId = BACKGROUND_ID;
     }
 
-    return RMInfo(color, pos, normal, objId);
+    return RMInfo(pos, normal, objId);
 }
 
 
@@ -179,21 +176,20 @@ RMInfo Raymarch(vec3 from, vec3 to)
 //  here be scene rendering
 // -------------------------
 vec4 Draw(vec2 fragCoord)
-{   
+{
     vec3   col = vec3(0.);
     vec3   ray = EyeRay(fragCoord, -EYE);
     RMInfo rmi = Raymarch(EYE, ray);
 
-    if(rmi.objId == RING_ID)
+    if (rmi.objId == RING_ID)
     {
-        col = mix(col, Gold(rmi.pos) * texture(iChannel0, reflect(ray, rmi.normal)).rgb, .99);            
+        col = mix(col, Gold(rmi.pos) * texture(iChannel0, reflect(ray, rmi.normal)).rgb, .99);
         rmi = Raymarch(rmi.pos, reflect(ray, rmi.normal));
-
-     }
-     else if(rmi.objId == BACKGROUND_ID)
-     {
-         col += Background(ray);
-     }
+    }
+    else if(rmi.objId == BACKGROUND_ID)
+    {
+        col += Background(ray);
+    }
 
     return vec4(col, 1.0);
 }
@@ -208,12 +204,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec4 vs = vec4(0.);
     for (int j = 0; j < AA_SAMPLES ;j++)
     {
-       float oy = float(j) * AA_WIDTH / max(float(AA_SAMPLES - 1), 1.);
-       for (int i = 0; i < AA_SAMPLES; i++)
-       {
-          float ox = float(i) * AA_WIDTH / max(float(AA_SAMPLES - 1), 1.);
-          vs += Draw(fragCoord + vec2(ox, oy));
-       }
+        float oy = float(j) * AA_WIDTH / max(float(AA_SAMPLES - 1), 1.);
+        for (int i = 0; i < AA_SAMPLES; i++)
+        {
+            float ox = float(i) * AA_WIDTH / max(float(AA_SAMPLES - 1), 1.);
+            vs += Draw(fragCoord + vec2(ox, oy));
+        }
     }
 
     fragColor = vs/vec4(AA_SAMPLES * AA_SAMPLES);
