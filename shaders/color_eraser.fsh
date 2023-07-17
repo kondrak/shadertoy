@@ -30,7 +30,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     fragColor = texture(iChannel0, fragCoord.xy / iResolution.xy);
 
-    float n = (iMouse.w < .5) ? 100. : 1.;
+    float n = (iMouse.z < .5) ? 100. : 1.;
     float d = length(fragCoord.xy - iMouse.xy) * n;  
     float a = 1.0 - min(d / 50., 1.);
 
